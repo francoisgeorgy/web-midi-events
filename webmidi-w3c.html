@@ -58,9 +58,15 @@
         }
 
         function toHexString(byteArray, sep) {
-            return Array.from(byteArray, function (byte) {
-                return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-            }).join(sep || '');
+            var s = sep || '';
+            h = '';
+            for (var i=0; i<byteArray.length; i++) {
+                h = h + ('0' + (byteArray[i] & 0xFF).toString(16)).slice(-2) + s;
+            }
+            return h.trim();
+            // return Array.from(byteArray, function (byte) {
+            //     return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+            // }).join(sep || '');
         }
 
         function listInputsAndOutputs() {
