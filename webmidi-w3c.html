@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Web MIDI Lab - Events</title>
-    <meta name="description" content="Test Web MIDI in your browser">
-    <meta name="author" content="francois.georgy@gmail.com">
+    <title>W3C Web MIDI events</title>
+    <meta name="author" content="https://github.com/francoisgeorgy">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -124,7 +123,13 @@
         }
 
         $(function () {
+
+            $('#clear-all').click(function(){
+                $('#events, #state, #inputs, #outputs').html('');
+            });
+
             navigator.requestMIDIAccess({ sysex: true }).then(onMIDISuccess, onMIDIFailure);
+
             function onMIDISuccess(midiAccess) {
                 log("Got access to MIDI", "#state");
                 W3CMidi = midiAccess;
@@ -132,10 +137,12 @@
                 listInputsAndOutputs();
                 setInputListeners();
             }
+
             function onMIDIFailure(msg) {
                 log("onMIDIFailure", "#state");
                 log("Failed to get MIDI access - " + msg, "#state");
             }
+
         });
     </script>
 </body>

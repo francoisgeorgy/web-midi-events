@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>WebMidi.js events</title>
+    <meta name="author" content="https://github.com/francoisgeorgy">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.rawgit.com/moment/moment/03073778/moment.js"></script>
+    <script src="https://rawgit.com/cotejp/webmidi/master/webmidi.min.js"></script>
+    <style>
+        html {
+            font-family: sans-serif;
+        }
+        #clear-all {
+            float: right;
+            font-size: 1em;
+        }
+        .gray-box {
+            border: 1px solid #aaa;
+            background-color: #f0f0f0;
+            padding: 1rem;
+            margin: 1rem;
+            text-align: left;
+        }
+        #events, #state, #inputs, #outputs {
+            font-family: monospace;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="clear-all">clear all</button>
+
+    <h1>WebMidi.js lib</h1>
+
+    <h3>State changes: (last change first)</h3>
+    <div id="state" class="gray-box"></div>
+        
+    <h3>MIDI Events: (last event first)</h3>
+    <div id="events" class="gray-box"></div>
+
+    <h3>Inputs (MIDI sources):</h3>
+    <div id="inputs" class="gray-box"></div>
+
+    <h3>Outputs (MIDI targets):</h3>
+    <div id="outputs" class="gray-box"></div>
+
+    <script>
+
+        // print in reverse order (preprend)
+        function log(what, where) {
+            $(where).prepend("[" + moment().format('HH:mm:ss.SSS') + "] " + what + "\n");
+        }
+
+        function portEventToString(event) {
+            return /* event.timestamp.toFixed(3) + ' ' + */ event.type + ' ' + event.port.type + ' ' + event.port.name + ' ' + event.port.id;
+        }
+
+        function inputEventToString(event) {
+            return /* event.timestamp.toFixed(3) + ' ' + */ event.type + ' on channel ' + event.channel + ' of ' + event.target.name;
+        }
+
+        function logEvent(event) {
+            console.log("logEvent", event);
+            if ((typeof event === 'undefined') || (event === null)) {
+                // console.log("eventToString: return empty string", event);
+                return;
+            }
+            if (event.hasOwnProperty("port")) {
+                log(portEventToString(event), '#events');
+            } else {
+                log(inputEventToString(event), '#events');
+            }
+        }
+
+        function listInputsAndOutputs() {
+            $("#inputs").html("");
+            $("#outputs").html("");
+            WebMidi.inputs.map(function(i) {log("input:" + i.name, "#inputs")});
+            WebMidi.outputs.map(function(i) {log("output:" + i.name, "#outputs")});
+        }
+        
+        // add an "noteon" event listener to each input
+        function addInputListeners() {
+            WebMidi.inputs.map(function(i) {
+                console.log('addInputListeners', i);
+                if (!i.hasListener('noteon', 'all', logEvent)) {
+                    i.addListener('noteon', 'all', logEvent);
+                    log('(' + i.name + ' input listener added for "noteon" event on all channels)', "#events");
+                }
+            });
+        }
+
+        function removeInputListeners() {
+            WebMidi.inputs.map(function(i) {
+                i.removeListener();
+                log('(' + i.name + ' input listeners removed for all channels)', "#events");
+            });
+        }
+
+        function handleMidiEvent(event) {
+            console.group('handleMidiEvent', event);
+            logEvent(event);
+            if ((event.type === "connected") && (event.port.type === 'input')) {
+                addInputListeners();
+            }
+            if ((event.type === "disconnected") && (event.port.type === 'input')) {
+                removeInputListeners();
+            }
+            console.groupEnd();
+        }
+
+        $(function() {
+
+            $('#clear-all').click(function(){
+                $('#events, #state, #inputs, #outputs').html('');
+            });
+
+            WebMidi.enable(function (err) {
+                if (err) alert("WebMidi could not be enabled.", err);
+                log("Got access to MIDI", "#state");        
+                WebMidi.addListener("connected", e => handleMidiEvent(e));
+                WebMidi.addListener("disconnected", e => handleMidiEvent(e));
+                listInputsAndOutputs();
+                addInputListeners();       
+            });
+
+        });
+
+    </script>
+</body>
+</html>
