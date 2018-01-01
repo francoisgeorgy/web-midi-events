@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Web MIDI Lab - Events</title>
+    <meta name="description" content="Test Web MIDI in your browser">
+    <meta name="author" content="francois.georgy@gmail.com">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.rawgit.com/moment/moment/03073778/moment.js"></script>
+    <style>
+        html {
+            font-family: sans-serif;
+        }
+        #clear-all {
+            float: right;
+            font-size: 1em;
+        }
+        .gray-box {
+            border: 1px solid #aaa;
+            background-color: #f0f0f0;
+            padding: 1rem;
+            margin: 1rem;
+            text-align: left;
+        }
+        #events, #states, #inputs, #outputs {
+            font-family: monospace;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="clear-all">clear all</button>
+
+    <h1>Web MIDI API: w3c standard API</h1>
+
+    <h3>State changes: (last change on top)</h3>
+    <div id="states" class="gray-box"></div>
+        
+    <h3>MIDI Events: (last event on top)</h3>
+    <div id="events" class="gray-box"></div>
+
+    <h3>Inputs (MIDI sources):</h3>
+    <div id="inputs" class="gray-box"></div>
+
+    <h3>Outputs (MIDI targets):</h3>
+    <div id="outputs" class="gray-box"></div>
+
+    <script>
+
+        var W3CMidi = null;  // global MIDIAccess object
+
+        function print(what, where) {
+            $(where).append("[" + moment().format('HH:mm:ss.SSS') + "] " + what + "\n");
+        }
+
+        function printr(what, where) {
+            $(where).prepend("[" + moment().format('HH:mm:ss.SSS') + "] " + what + "\n");
+        }
+
+        function setInputListeners() {
+            var inputs = W3CMidi.inputs.values();
+            for (var input = inputs.next(); input && !input.done; input = inputs.next()) {
+                input.value.onmidimessage = handleMessage;
+            }
+        }
+
+        function handleMessage(event) {
+            if (event instanceof MIDIMessageEvent) {
+                var bytes = event.data;     /** @type Uint8Array */
+                // The MIDI channel
+                var channel = bytes[0] & 0x0F;
+                // The MIDI event type
+                var type = bytes[0] & 0xF0;
+                var port = event.currentTarget;
+                printr(event.type + ': ' + port.type + ' ' + port.name + ' chan:' + channel + ' type:' + type + ' data:' + bytes, "#events");
+            } else {
+                printr(event.type + ': ' + event.data, "#events");
+            }
+        }
+
+        function listInputsAndOutputs() {
+            if (W3CMidi === null) return;
+            $("#inputs").html("");
+            $("#outputs").html("");
+            var iter = W3CMidi.inputs.values();
+            for (var o = iter.next(); !o.done; o = iter.next()) {
+                var i = o.value;
+                printr(i.type + ' ' + i.state + ' ' + i.manufacturer + ' ' + i.name + ' ' + i.id, "#inputs");
+            }
+            var iter = W3CMidi.outputs.values();
+            for (var o = iter.next(); !o.done; o = iter.next()) {
+                var i = o.value;
+                printr(i.type + ' ' + i.state + ' ' + i.manufacturer + ' ' + i.name + ' ' + i.id, "#outputs");
+            }
+        }
+
+        function handleStateChange(event) {
+            var p = event.port;
+            printr('state change: ' + p.type + ' "' + p.name + '": ' + p.state, "#events");
+            if (p.state === "connected") {
+                // Handle the connection
+                printr('port connection: ' + p.type + ' "' + p.name + '"', "#states");
+                if (p.type === "input") {
+                    p.onmidimessage = handleMessage;
+                }
+            } else if (p.state === "disconnected") {
+                // Handle the disconnection
+                printr('port disconnection: ' + p.type + ' "' + p.name + '"', "#states");
+                if (p.type === "input") {
+                    p.onmidimessage = null;
+                }
+            } else {
+                printr('port ' + p.type + ' "' + p.name + '" is in an unknown state: ' + p.state , "#states");
+            }
+            listInputsAndOutputs(midi);
+        }
+
+        $(function () {
+            navigator.requestMIDIAccess({ sysex: true }).then(onMIDISuccess, onMIDIFailure);
+            function onMIDISuccess(midiAccess) {
+                printr("Got access to MIDI", "#states");
+                W3CMidi = midiAccess;
+                W3CMidi.onstatechange = handleStateChange;
+                listInputsAndOutputs();
+                setInputListeners();
+            }
+            function onMIDIFailure(msg) {
+                printr("onMIDIFailure", "#states");
+                printr("Failed to get MIDI access - " + msg, "#states");
+            }
+        });
+    </script>
+</body>
+</html>
