@@ -28,6 +28,9 @@
             font-family: monospace;
             white-space: pre;
         }
+        .gray {
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -54,7 +57,8 @@
 
         // print in reverse order (preprend)
         function log(what, where) {
-            $(where).prepend("[" + moment().format('HH:mm:ss.SSS') + "] " + what + "\n");
+            var c = what.startsWith("(") ? "gray" : "";
+            $(where).prepend("<span class=\"" + c + "\">[" + moment().format('HH:mm:ss.SSS') + "] " + what + "</span>\n");
         }
 
         function toHexString(byteArray, sep) {
@@ -70,25 +74,26 @@
         }
 
         function listInputsAndOutputs() {
-            console.log(listInputsAndOutputs);
+            console.log("listInputsAndOutputs");
             if (W3CMidi === null) return;
             $("#inputs").html("");
             $("#outputs").html("");
             var iter = W3CMidi.inputs.values();
             for (var o = iter.next(); !o.done; o = iter.next()) {
                 var i = o.value;
-                log(i.type + ' ' + i.state + ' ' + i.manufacturer + ' ' + i.name + ' ' + i.id, "#inputs");
+                log(i.type + ' ' + i.state + ' ' + i.manufacturer + ' "' + i.name + '" ' + i.id, "#inputs");
             }
             var iter = W3CMidi.outputs.values();
             for (var o = iter.next(); !o.done; o = iter.next()) {
                 var i = o.value;
-                log(i.type + ' ' + i.state + ' ' + i.manufacturer + ' ' + i.name + ' ' + i.id, "#outputs");
+                log(i.type + ' ' + i.state + ' ' + i.manufacturer + ' "' + i.name + '" ' + i.id, "#outputs");
             }
         }
 
         function setInputListeners() {
             var inputs = W3CMidi.inputs.values();
             for (var input = inputs.next(); input && !input.done; input = inputs.next()) {
+                console.log(`setInputListeners: add onMidiMessageHandler for input "${input.value.name}"`);
                 input.value.onmidimessage = onMidiMessageHandler;
             }
         }
@@ -99,30 +104,31 @@
                 var channel = bytes[0] & 0x0F;  // MIDI channel
                 var type = bytes[0] & 0xF0;     // MIDI event type
                 var port = event.currentTarget;
-                log(event.type + ': ' + port.name + ' ' + port.type + ' on channel ' + channel + ', type: ' + type + ', data: ' + toHexString(bytes, ' '), "#events");
+                log(event.type + ': "' + port.name + '" ' + port.type + ' on channel ' + channel + ', type: ' + type + ', data: ' + toHexString(bytes, ' '), "#events");
             } else {
                 log(event.type + ': ' + toHexString(event.data, ''), "#events");
             }
         }
 
         function onStateChangeHandler(event) {
-            console.group(onStateChangeHandler, event);
+            console.group("onStateChangeHandler");
             var p = event.port;
-            log(p.name + ' ' + p.type + ' ' + p.state, "#state");
+            console.log('"' + p.name + '" ' + p.type + ' ' + p.state + ' (' + p.connection + ')', event);
+            log('"' + p.name + '" ' + p.type + ' ' + p.state + ' (' + p.connection + ')', "#state");
             if (p.state === "connected") {
                 // Handle the connection
                 if (p.type === "input") {
                     p.onmidimessage = onMidiMessageHandler;
-                    log('(' + p.name + ' input listener added)', "#state");
+                    log('("' + p.name + '" input listener added)', "#state");
                 }
             } else if (p.state === "disconnected") {
                 // Handle the disconnection
                 if (p.type === "input") {
                     p.onmidimessage = null;
-                    log('(' + p.name + ' input listener removed)', "#state");
+                    log('("' + p.name + '" input listener removed)', "#state");
                 }
             } else {
-                log(p.type + ' ' + p.name + ' is in an unknown state: ' + p.state , "#state");
+                log(p.type + ' "' + p.name + '" is in an unknown state: ' + p.state , "#state");
             }
             listInputsAndOutputs();
             console.groupEnd();

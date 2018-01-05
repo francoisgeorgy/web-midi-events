@@ -29,6 +29,9 @@
             font-family: monospace;
             white-space: pre;
         }
+        .gray {
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -53,15 +56,16 @@
 
         // print in reverse order (preprend)
         function log(what, where) {
-            $(where).prepend("[" + moment().format('HH:mm:ss.SSS') + "] " + what + "\n");
+            var c = what.startsWith("(") ? "gray" : "";
+            $(where).prepend("<span class=\"" + c + "\">[" + moment().format('HH:mm:ss.SSS') + "] " + what + "</span>\n");
         }
 
         function portEventToString(event) {
-            return /* event.timestamp.toFixed(3) + ' ' + */ event.type + ' ' + event.port.type + ' ' + event.port.name + ' ' + event.port.id;
+            return /* event.timestamp.toFixed(3) + ' ' + */ event.type + ' ' + event.port.type + ' "' + event.port.name + '" (' + event.port.connection + ")";  // + event.port.id;
         }
 
         function inputEventToString(event) {
-            return /* event.timestamp.toFixed(3) + ' ' + */ event.type + ' on channel ' + event.channel + ' of ' + event.target.name;
+            return /* event.timestamp.toFixed(3) + ' ' + */ event.type + ' on channel ' + event.channel + ' of "' + event.target.name + '"';
         }
 
         function logEvent(event) {
@@ -90,7 +94,7 @@
                 console.log('addInputListeners', i);
                 if (!i.hasListener('noteon', 'all', logEvent)) {
                     i.addListener('noteon', 'all', logEvent);
-                    log('(' + i.name + ' input listener added for "noteon" event on all channels)', "#events");
+                    log('("' + i.name + '" input listener added for "noteon" event on all channels)', "#events");
                 }
             });
         }
@@ -98,7 +102,7 @@
         function removeInputListeners() {
             WebMidi.inputs.map(function(i) {
                 i.removeListener();
-                log('(' + i.name + ' input listeners removed for all channels)', "#events");
+                log('("' + i.name + '" input listeners removed for all channels)', "#events");
             });
         }
 
