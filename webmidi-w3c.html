@@ -53,24 +53,26 @@
 
     <script>
 
+        // No ES6 fancy features, because we try to remain compatible with http://www.taktech.org/takm/WebMIDIBrowser/Web_MIDI_Browser.html
+
         var W3CMidi = null;  // global MIDIAccess object
 
-        // print in reverse order (preprend)
+        // print in reverse order
         function log(what, where) {
             var c = what.startsWith("(") ? "gray" : "";
             $(where).prepend("<span class=\"" + c + "\">[" + moment().format('HH:mm:ss.SSS') + "] " + what + "</span>\n");
         }
 
         function toHexString(byteArray, sep) {
-            var s = sep || '';
-            h = '';
-            for (var i=0; i<byteArray.length; i++) {
-                h = h + ('0' + (byteArray[i] & 0xFF).toString(16)).slice(-2) + s;
-            }
-            return h.trim();
-            // return Array.from(byteArray, function (byte) {
-            //     return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-            // }).join(sep || '');
+            // var s = sep || '';
+            // h = '';
+            // for (var i=0; i<byteArray.length; i++) {
+            //     h = h + ('0' + (byteArray[i] & 0xFF).toString(16)).slice(-2) + s;
+            // }
+            // return h.trim();
+            return Array.from(byteArray, function (byte) {
+                return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+            }).join(sep || '');
         }
 
         function listInputsAndOutputs() {
@@ -140,19 +142,25 @@
                 $('#events, #state, #inputs, #outputs').html('');
             });
 
-            navigator.requestMIDIAccess({ sysex: true }).then(onMIDISuccess, onMIDIFailure);
+            if (navigator.requestMIDIAccess) {
 
-            function onMIDISuccess(midiAccess) {
-                log("Got access to MIDI", "#state");
-                W3CMidi = midiAccess;
-                W3CMidi.onstatechange = onStateChangeHandler;
-                listInputsAndOutputs();
-                setInputListeners();
-            }
+                navigator.requestMIDIAccess({ sysex: true }).then(onMIDISuccess, onMIDIFailure);
 
-            function onMIDIFailure(msg) {
-                log("onMIDIFailure", "#state");
-                log("Failed to get MIDI access - " + msg, "#state");
+                function onMIDISuccess(midiAccess) {
+                    log("Got access to MIDI", "#state");
+                    W3CMidi = midiAccess;
+                    W3CMidi.onstatechange = onStateChangeHandler;
+                    listInputsAndOutputs();
+                    setInputListeners();
+                }
+
+                function onMIDIFailure(msg) {
+                    console.warn("Failed to get MIDI access", msg);
+                    log("Failed to get MIDI access. " + msg, "#state");
+                }
+
+            } else {
+                log("ERROR: navigator.requestMIDIAccess not supported", "#state");
             }
 
         });
