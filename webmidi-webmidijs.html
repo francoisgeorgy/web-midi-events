@@ -54,7 +54,9 @@
 
     <script>
 
-        // print in reverse order (preprend)
+        // No ES6 fancy features, because we try to remain compatible with http://www.taktech.org/takm/WebMIDIBrowser/Web_MIDI_Browser.html
+
+        // print in reverse order
         function log(what, where) {
             var c = what.startsWith("(") ? "gray" : "";
             $(where).prepend("<span class=\"" + c + "\">[" + moment().format('HH:mm:ss.SSS') + "] " + what + "</span>\n");
@@ -71,7 +73,6 @@
         function logEvent(event) {
             console.log("logEvent", event);
             if ((typeof event === 'undefined') || (event === null)) {
-                // console.log("eventToString: return empty string", event);
                 return;
             }
             if (event.hasOwnProperty("port")) {
@@ -88,13 +89,13 @@
             WebMidi.outputs.map(function(i) {log("output:" + i.name, "#outputs")});
         }
         
-        // add an "noteon" event listener to each input
+        // add an "controlchange" event listener to each input
         function addInputListeners() {
             WebMidi.inputs.map(function(i) {
                 console.log('addInputListeners', i);
-                if (!i.hasListener('noteon', 'all', logEvent)) {
-                    i.addListener('noteon', 'all', logEvent);
-                    log('("' + i.name + '" input listener added for "noteon" event on all channels)', "#events");
+                if (!i.hasListener('controlchange', 'all', logEvent)) {
+                    i.addListener('controlchange', 'all', logEvent);
+                    log('("' + i.name + '" input listener added for "controlchange" event on all channels)', "#state");
                 }
             });
         }
@@ -125,10 +126,14 @@
             });
 
             WebMidi.enable(function (err) {
-                if (err) alert("WebMidi could not be enabled.", err);
+                if (err) {
+                    console.warn("WebMidi could not be enabled", err);
+                    log("ERROR: " + err.message, "#state");
+                    return;
+                }
                 log("Got access to MIDI", "#state");        
-                WebMidi.addListener("connected", e => handleMidiEvent(e));
-                WebMidi.addListener("disconnected", e => handleMidiEvent(e));
+                WebMidi.addListener("connected", handleMidiEvent);
+                WebMidi.addListener("disconnected", handleMidiEvent);
                 listInputsAndOutputs();
                 addInputListeners();       
             });
