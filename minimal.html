@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+</head>
+<body>
+<script>
+    console.log("start");
+    navigator.requestMIDIAccess()
+        .then(function(access) {
+            console.log("then()");
+            const inputs = access.inputs.values();
+            const outputs = access.outputs.values();
+            console.log("then()", inputs, outputs);
+            access.onstatechange = function(e) {
+                console.log("onstatechange", e.port.name, e.port.manufacturer, e.port.state);
+            };
+        }
+    );
+
+</script>
+</body>
