@@ -4,37 +4,107 @@
 </head>
 <body>
 <script>
-    console.log("start");
 
-    // from https://webaudio.github.io/web-midi-api/#obtaining-access-to-midi-devices
-    function listInputsAndOutputs(midiAccess) {
-        for (var entry of midiAccess.inputs) {
-            var input = entry[1];
-            console.log( "Input port [type:'" + input.type + "'] id:'" + input.id +
-                "' manufacturer:'" + input.manufacturer + "' name:'" + input.name +
-                "' version:'" + input.version + "'" );
+    var MIDI = null;    // global MIDIAccess variable that will be set when we get access to MIDI.
+
+    function onMidiMessage(event) {
+        let s = `MIDI message received at timestamp ${event.timestamp} [${event.data.length} bytes]: `;
+        for (let i=0; i<event.data.length; i++) {
+            s += `0x${event.data[i].toString(16)} `;
         }
-        for (var entry of midiAccess.outputs) {
-            var output = entry[1];
-            console.log( "Output port [type:'" + output.type + "'] id:'" + output.id +
-                "' manufacturer:'" + output.manufacturer + "' name:'" + output.name +
-                "' version:'" + output.version + "'" );
-        }
+        console.log(s);
     }
 
-    navigator.requestMIDIAccess({ sysex: true })
-        .then(function(access) {
-            console.log("then()");
-            listInputsAndOutputs(access);
-            access.onstatechange = function(e) {
-                console.log("onstatechange", e.port.name, e.port.manufacturer, e.port.state);
-            };
-        })
-        .catch(
-            function(e) {
-                console.error(e);
+    function listInputsAndOutputs() {
+        console.groupCollapsed(`${MIDI.inputs.size} inputs and ${MIDI.outputs.size} outputs`);
+        for (let entry of MIDI.inputs) {
+            const p = entry[1];
+            console.log(`input port: ${p.type} ${p.name} ${p.state} ${p.connection}`);
+        }
+        for (let entry of MIDI.outputs) {
+            const p = entry[1];
+            console.log(`output port: ${p.type} ${p.name} ${p.state} ${p.connection}`);
+        }
+        console.groupEnd();
+    }
+
+    function onStateChange(e) {
+
+        const p = e.port;
+
+        console.group("onStateChange", p.type, p.name, p.state, p.connection);
+
+/*
+        if (p.connection === "pending") {
+            console.log(`ignore connection in pending state for ${p.type} ${p.name} ${p.state} ${p.connection}`);
+
+            if (p.type === "input") {
+                if (p.onmidimessage) {
+                    console.warn(`HAS remove the midi message handler set to ${p.type} ${p.name} ${p.state} ${p.connection}`);
+                    // p.onmidimessage = null;
+                }
             }
-        );
+
+            // console.groupEnd();
+            // return;
+        }
+        //} else {
+*/
+
+        if (p.connection === "open") {
+
+            console.warn(`connection opened for ${p.type} ${p.name} ${p.state} ${p.connection}`);
+
+        } else {
+
+            if (p.state === "connected") {
+                // Handle the connection
+                if (p.type === "input") {
+                    if (!p.onmidimessage) {
+                        console.warn(`add a midi message handler to ${p.type} ${p.name} ${p.state} ${p.connection}`);
+                        p.onmidimessage = onMidiMessage;
+                    } else {
+                        console.log(`a midi message handler is already set for ${p.type} ${p.name} ${p.state} ${p.connection}`);
+                    }
+                }
+            } else if (p.state === "disconnected") {
+                // Handle the disconnection
+                if (p.type === "input") {
+                    if (p.onmidimessage) {
+                        console.warn(`remove the midi message handler set to ${p.type} ${p.name} ${p.state} ${p.connection}`);
+                        p.onmidimessage = null;
+                        // console.warn(`removed the midi message handler set to ${p.type} ${p.name} ${p.state} ${p.connection}`);
+                    }
+                }
+            } else {
+                console.warn(`${p.type} ${p.name} is in an unknown state: ${p.state} ${p.state} ${p.connection}`);
+            }
+        }
+
+        listInputsAndOutputs();
+
+        console.groupEnd();
+    }
+
+    function onMIDISuccess(midiAccess) {
+        console.group("MIDI ready");
+
+        MIDI = midiAccess;  // save in the global var
+
+        listInputsAndOutputs();
+
+        midiAccess.onstatechange = onStateChange;
+
+        console.groupEnd();
+    }
+
+    function onMIDIFailure(msg) {
+        console.log(`Failed to get MIDI access: ${msg}`);
+    }
+
+    navigator.requestMIDIAccess({ sysex: true }).then(onMIDISuccess, onMIDIFailure);
+
+    // window.setTimeout(listInputsAndOutputs, 20000);
 
 </script>
 </body>
