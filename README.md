@@ -23,6 +23,8 @@ subsequently been disconnected and is unavailable for use. If the device is reco
 the system should attempt to reopen the device (following the algorithm to open a MIDIPort); this will result in  either 
 the connection state transitioning to "open" or to "closed".
 
+Note: __closed__ is the default state of a device.
+
 #### Implicit opening:
 
 https://www.w3.org/TR/webmidi/#widl-MIDIPort-open-Promise-MIDIPort
