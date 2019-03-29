@@ -109,12 +109,10 @@
         // print in reverse order
         function log(what, where) {
             var c = what.startsWith("(") ? "gray" : "";
-            $(where).prepend("<span class=\"" + c + "\">[" + moment().format('HH:mm:ss.SSS') + "] " + what + "</span>\n");
+            $(where).append("<span class=\"" + c + "\">[" + moment().format('HH:mm:ss.SSS') + "] " + what + "</span>\n");
         }
 
         function listInputsAndOutputs() {
-            // console.log("listInputsAndOutputs");
-
             if (W3CMidi === null) return;
 
             $("#inputs").html("");
