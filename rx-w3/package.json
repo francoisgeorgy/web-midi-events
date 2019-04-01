@@ -1,0 +1,26 @@
+{
+  "name": "rx-w3",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "François Georgy <francois.georgy@gmail.com>",
+  "license": "GPL-3.0-or-later",
+  "private": true,
+  "scripts": {
+    "dev": "webpack --mode development",
+    "build": "webpack --mode production",
+    "start": "webpack-dev-server --mode development --open",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-env": "^2.4.1",
+    "babel-loader": "^8.0.5",
+    "html-webpack-plugin": "^3.2.0",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0",
+    "webpack-dev-server": "^3.2.1"
+  },
+  "dependencies": {
+    "rxjs": "^6.4.0"
+  }
+}
