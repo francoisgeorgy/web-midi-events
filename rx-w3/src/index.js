@@ -1,6 +1,9 @@
-import {bindCallback, fromEvent, fromEventPattern} from "rxjs";
+import {bindCallback, fromEvent, fromEventPattern, Subject} from "rxjs";
+import {multicast, refCount} from "rxjs/operators";
 
 var W3CMidi = null;  // global MIDIAccess object
+
+const inputs = {};  // array of Subject representing MIDI input streams
 
 const midi_messages = {};
 
@@ -100,28 +103,109 @@ function onStateChange(event) {
             // createObservable(p);
             // subscribe(p);
             // console.log(p.onmidimessage);
-            const O = fromEventPattern(
+
+            console.log("create observable");
+
+            const SRC = fromEventPattern(
                 handler => {    // called each time we subscribe to this Observable. So, only the latest subscriber will be notified.
                     console.log("fromEventPattern: set onmidimessage");
                     p.onmidimessage = handler
                 },
-                handler => p.onmidimessage = null
+                handler => {
+                    console.log("fromEventPattern: unset onmidimessage (set to null)");
+                    p.onmidimessage = null
+                }
             );
-            // const O = fromEvent(p, "onmidimessage");
-            const S1 = O.subscribe(m => console.log("S1", m));
-            const S2 = O.subscribe(m => console.log("S2", m));
+            // const SRC = fromEvent(p, "onmidimessage");
+            // const S1 = SRC.subscribe(m => console.log("S1", m));
+            // const S2 = SRC.subscribe(m => console.log("S2", m));
             // console.log(p.onmidimessage);
             // S.unsubscribe();
             // console.log(p.onmidimessage);
+
+            console.log("create subject");
+
+            /*
+            const subject = new Subject();
+            subject.subscribe(m => console.log("subject 1", m));
+            subject.subscribe(m => console.log("subject 2", m));
+
+            console.log("subject subscribes to observable");
+            SRC.subscribe(subject);
+
+            subject.unsubscribe()
+            */
+
+            /*
+
+            without refCount
+
+            const multicasted = SRC.pipe(multicast(new Subject(), SRC));
+            const subscription1 = multicasted.subscribe(m => console.log("multicasted subject 1", m));
+            const subscription2 = multicasted.subscribe(m => console.log("multicasted subject 2", m));
+
+            const multicastSubscription = multicasted.connect();
+
+            setTimeout(() => {
+                console.log("subscription1.unsubscribe()");
+                subscription1.unsubscribe();
+            }, 2000);
+            setTimeout(() => {
+                console.log("subscription2.unsubscribe()");
+                subscription2.unsubscribe();
+
+                console.log("multicastSubscription.unsubscribe()");
+                multicastSubscription.unsubscribe();
+            }, 3000);
+            */
+
+            /*
+            statechange: connected input VMPK Output connection closed
+            create observable
+            create subject
+            fromEventPattern: set onmidimessage
+            statechange: connected output VMPK Input connection closed
+            statechange: connected input VMPK Output connection open
+            subscription1.unsubscribe()
+            subscription2.unsubscribe()
+            multicastSubscription.unsubscribe()
+            fromEventPattern: unset onmidimessage (set to null)
+            statechange: disconnected input VMPK Output connection pending
+            statechange: disconnected output VMPK Input connection closed
+            */
+
+            // without refCount
+
+            const refCounted = SRC.pipe(multicast(new Subject()), refCount());
+            const subscription1 = refCounted.subscribe(m => console.log("multicasted subject 1", m));
+            const subscription2 = refCounted.subscribe(m => console.log("multicasted subject 2", m));
+
+            setTimeout(() => {
+                console.log("subscription1.unsubscribe()");
+                subscription1.unsubscribe();
+            }, 2000);
+            setTimeout(() => {
+                console.log("subscription2.unsubscribe()");
+                subscription2.unsubscribe();
+            }, 4000);
+
+            let subscription3;
+            setTimeout(() => {
+                console.log("subscription3.subscribe()");
+                subscription3 = refCounted.subscribe(m => console.log("multicasted subject 3", m));
+            }, 6000);
+
 
         }
     } else if (p.state === "disconnected") {
         // Handle the disconnection
         if (p.type === "input") {
+/*
             if (p.onmidimessage) {
                 p.onmidimessage = null;
                 log(`- ${p.name} input listener removed`);
             }
+*/
         }
     // } else {
     //     log("-- " + p.type + ' "' + p.name + '" is in an unknown state: ' + p.state);
