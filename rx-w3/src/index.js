@@ -176,6 +176,8 @@ function onStateChange(event) {
 
             // without refCount
 
+            // const S = multicast(new Subject());
+            // const refCounted = SRC.pipe(S, refCount());     // ConnectableObservable
             const refCounted = SRC.pipe(multicast(new Subject()), refCount());
             const subscription1 = refCounted.subscribe(m => console.log("multicasted subject 1", m));
             const subscription2 = refCounted.subscribe(m => console.log("multicasted subject 2", m));
@@ -194,6 +196,11 @@ function onStateChange(event) {
                 console.log("subscription3.subscribe()");
                 subscription3 = refCounted.subscribe(m => console.log("multicasted subject 3", m));
             }, 6000);
+
+            // setTimeout(() => {
+            //     console.log("S.complete()");
+            //     S.complete();
+            // }, 2000);
 
 
         }
