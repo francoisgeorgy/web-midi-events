@@ -1,5 +1,5 @@
-import {bindCallback, fromEvent, fromEventPattern, Subject} from "rxjs";
-import {multicast, refCount} from "rxjs/operators";
+import {fromEvent, fromEventPattern, Observable, Subject} from "rxjs";
+import {multicast, refCount, map} from "rxjs/operators";
 
 var W3CMidi = null;  // global MIDIAccess object
 
@@ -96,13 +96,6 @@ function onStateChange(event) {
     if (p.state === "connected" && p.connection !== "open") {
         // Handle the connection
         if (p.type === "input") {
-            // if (!p.onmidimessage) {
-            //     p.onmidimessage = onMidiMessage;
-            //     log(`+ ${p.name} input listener added`);
-            // }
-            // createObservable(p);
-            // subscribe(p);
-            // console.log(p.onmidimessage);
 
             console.log("create observable");
 
@@ -116,43 +109,73 @@ function onStateChange(event) {
                     p.onmidimessage = null
                 }
             );
-            // const SRC = fromEvent(p, "onmidimessage");
-            // const S1 = SRC.subscribe(m => console.log("S1", m));
-            // const S2 = SRC.subscribe(m => console.log("S2", m));
-            // console.log(p.onmidimessage);
-            // S.unsubscribe();
-            // console.log(p.onmidimessage);
 
-            console.log("create subject");
+            console.log("create refCounted");
 
-            // without refCount
+            // multicast: Returns an Observable that emits the results of invoking a specified selector on items emitted
+            //            by a ConnectableObservable that shares a single subscription to the underlying stream.
 
-            // const S = multicast(new Subject());
-            // const refCounted = SRC.pipe(S, refCount());     // ConnectableObservable
             const refCounted = obs.pipe(multicast(new Subject()), refCount());
-            const subscription1 = refCounted.subscribe(m => console.log("multicasted subject 1", m));
-            const subscription2 = refCounted.subscribe(m => console.log("multicasted subject 2", m));
 
-            setTimeout(() => {
-                console.log("subscription1.unsubscribe()");
-                subscription1.unsubscribe();
-            }, 2000);
-            setTimeout(() => {
-                console.log("subscription2.unsubscribe()");
-                subscription2.unsubscribe();
-            }, 4000);
+            // const subscription1 = refCounted.subscribe(m => console.log("multicasted subject 1", m));
 
-            let subscription3;
-            setTimeout(() => {
-                console.log("subscription3.subscribe()");
-                subscription3 = refCounted.subscribe(m => console.log("multicasted subject 3", m));
-            }, 6000);
+            console.log("o2");
 
-            // setTimeout(() => {
-            //     console.log("S.complete()");
-            //     S.complete();
-            // }, 2000);
+            let o2 = new Observable(obs=> {
 
+                const o2s = refCounted.subscribe(m => {
+                    console.log("o2: multicasted subject 1", m);
+                    obs.next(m);
+                    // obs.complete();
+                });
+
+                return () => {
+                    console.log("o2 teardown");
+                    o2s.unsubscribe();
+                }
+
+            });
+
+            console.log("s2");
+
+            const s2 = o2.pipe(map((m) => {console.log("o2 map"); return m})).subscribe(x => console.log("s2", x));
+
+            setTimeout(() => {console.log("s2.unsubscribe()"); s2.unsubscribe();}, 4000);
+
+
+            /*
+             //
+             // Example 1
+             //
+                        //TODO: add error and complete handlers
+                        // const myObserver = {
+                        //     next: x => console.log('Observer got a next value: ' + x),
+                        //     error: err => console.error('Observer got an error: ' + err),
+                        //     complete: () => console.log('Observer got a complete notification'),
+                        // };
+                        //
+                        // // Execute with the observer object
+                        // myObservable.subscribe(myObserver);
+
+                        const subscription1 = refCounted.subscribe(m => console.log("multicasted subject 1", m));
+                        const subscription2 = refCounted.subscribe(m => console.log("multicasted subject 2", m));
+
+                        setTimeout(() => {
+                            console.log("subscription1.unsubscribe()");
+                            subscription1.unsubscribe();
+                        }, 2000);
+
+                        setTimeout(() => {
+                            console.log("subscription2.unsubscribe()");
+                            subscription2.unsubscribe();
+                        }, 4000);
+
+                        let subscription3;
+                        setTimeout(() => {
+                            console.log("subscription3.subscribe()");
+                            subscription3 = refCounted.subscribe(m => console.log("multicasted subject 3", m));
+                        }, 6000);
+            */
 
         }
     } else if (p.state === "disconnected") {
@@ -165,8 +188,6 @@ function onStateChange(event) {
             }
 */
         }
-    // } else {
-    //     log("-- " + p.type + ' "' + p.name + '" is in an unknown state: ' + p.state);
     }
 
     // listInputsAndOutputs();

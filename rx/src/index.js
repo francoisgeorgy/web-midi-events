@@ -1,6 +1,6 @@
-
 import * as WebMidi from "webmidi";
-import {bindCallback} from "rxjs";
+import {bindCallback, Subject} from "rxjs";
+import {multicast, refCount} from "rxjs/operators";
 
 function logMidiMessage(m) {
     console.log(m);
@@ -28,14 +28,44 @@ function addInputListeners() {
         return;
     }
 
-    const addInputListener = bindCallback(WebMidi.inputs[i].addListener);
-    // const messages = addInputListener("midimessage", "all");
-    const messages = addInputListener.call(WebMidi.inputs[i],"midimessage", "all");
+    function selectorFunction(param1, param2) {
+        return {param1, param2};
+    }
 
-    messages.subscribe(
-        m => console.log("midimessage", m),
-        e => console.error(e)
-    );
+
+    const obs = bindCallback(WebMidi.inputs[i].addListener, selectorFunction);    //.bind(WebMidi.inputs[i]);
+    // console.log("obs", obs);
+
+    var observable = observableFactory('username', 'password');
+
+    const refCounted = obs.pipe(multicast(new Subject()), refCount());
+    const subscription1 = refCounted.subscribe(m => console.log("multicasted subject 1", m));
+    // const subscription2 = refCounted.subscribe(m => console.log("multicasted subject 2", m));
+
+    setTimeout(() => {
+        console.log("subscription1.unsubscribe()");
+        subscription1.unsubscribe();
+    }, 2000);
+    // setTimeout(() => {
+    //     console.log("subscription2.unsubscribe()");
+    //     subscription2.unsubscribe();
+    // }, 4000);
+    // let subscription3;
+    // setTimeout(() => {
+    //     console.log("subscription3.subscribe()");
+    //     subscription3 = refCounted.subscribe(m => console.log("multicasted subject 3", m));
+    // }, 6000);
+
+
+    /*
+        // const messages = addInputListener("midimessage", "all");
+        const messages = obs.call(WebMidi.inputs[i],"midimessage", "all");
+
+        messages.subscribe(
+            m => console.log("midimessage", m),
+            e => console.error(e)
+        );
+    */
 
     // WebMidi.inputs.map(function(port) {
 
