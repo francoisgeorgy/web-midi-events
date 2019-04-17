@@ -139,6 +139,7 @@ function onStateChange(event) {
             console.log("s2");
 
             const s2 = o2.pipe(map((m) => {console.log("o2 map"); return m})).subscribe(x => console.log("s2", x));
+            // const s2 = o2.subscribe(x => console.log("s2", x));
 
             setTimeout(() => {console.log("s2.unsubscribe()"); s2.unsubscribe();}, 4000);
 
