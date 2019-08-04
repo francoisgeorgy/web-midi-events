@@ -118,7 +118,7 @@
         }
 
         function connectionEventToString(event) {
-            return `"${event.type}" event for ${event.port.type} ${event.port.name}, connection status is ${event.port.connection}`;
+            return `${event.port.name} : "${event.type}" event for ${event.port.type}, connection status is ${event.port.connection}`;
         }
 
         function inputMessageToString(message) {
@@ -140,18 +140,20 @@
         }
 
         function listInputsAndOutputs() {
+            console.log("listInputsAndOutputs", WebMidi.inputs, WebMidi.outputs)
             $("#inputs").html("");
             $("#outputs").html("");
-            WebMidi.inputs.map(function(i) { list(i.name, "#inputs", i.id) });
-            WebMidi.outputs.map(function(i) { list(i.name, "#outputs", i.id) });
+            WebMidi.inputs.forEach(function(i) { list(i.name, "#inputs", i.id) });
+            WebMidi.outputs.forEach(function(i) { list(i.name, "#outputs", i.id) });
         }
 
         // add a "midimessage" event listener to each input
         function addInputListeners() {
-            WebMidi.inputs.map(function(i) {
+            WebMidi.inputs.forEach(function(i) {
+                console.log(`${i.name} : add input listener`, i);
                 if (!i.hasListener("midimessage", "all", logMidiMessage)) {
                     i.addListener("midimessage", "all", logMidiMessage);
-                    log(`${i.name} : input listener added on all channels`, "#state");
+                    console.log(`${i.name} : input listener added on all channels`, "#state");
                 } else {
                     console.log(`${i.name} : input listener already added`);
                 }
@@ -159,9 +161,10 @@
         }
 
         function removeInputListeners() {
-            WebMidi.inputs.map(function(i) {
+            WebMidi.inputs.forEach(function(i) {
+                console.log(`${i.name} : remove input listener`, i);
                 i.removeListener();
-                log(`${i.name} input listeners removed for all channels`, "#state");
+                console.log(`${i.name} input listeners removed for all channels`, "#state");
             });
         }
 
