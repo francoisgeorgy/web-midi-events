@@ -142,7 +142,8 @@
                 if (p.type === "input") {
                     if (!p.onmidimessage) {
                         p.onmidimessage = onMidiMessage;
-                        log('-- "' + p.name + '" input listener added', "#state");
+                        // log('-- "' + p.name + '" input listener added', "#state");
+                        console.log(p.name + '" input listener added', "#state");
                     }
                 }
             } else if (p.state === "disconnected") {
@@ -150,11 +151,13 @@
                 if (p.type === "input") {
                     if (p.onmidimessage) {
                         p.onmidimessage = null;
-                        log('-- "' + p.name + '" input listener removed', "#state");
+                        // log('-- "' + p.name + '" input listener removed', "#state");
+                        console.log(p.name + '" input listener removed', "#state");
                     }
                 }
             } else {
-                log("-- " + p.type + ' "' + p.name + '" is in an unknown state: ' + p.state , "#state");
+                // log("-- " + p.type + ' "' + p.name + '" is in an unknown state: ' + p.state , "#state");
+                console.log(p.type + ' "' + p.name + '" is in an unknown state: ' + p.state , "#state");
             }
             listInputsAndOutputs();
         }
