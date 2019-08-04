@@ -135,6 +135,8 @@
 
         function onConnectionEvent(event) {
 
+            console.log("onConnectionEvent", event);
+
             if ((typeof event === 'undefined') || (event === null)) {
                 console.warn("logMidiEvent: null or undefined event received");
                 return;
